@@ -1,45 +1,11 @@
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting Prisma Database Seeding...');
+  console.log('🌱 Starting Prisma Database Seeding (Categories Only)...');
 
-  // Clean existing tables
-  await prisma.review.deleteMany();
-  await prisma.orderItem.deleteMany();
-  await prisma.order.deleteMany();
-  await prisma.wishlist.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.category.deleteMany();
-  await prisma.user.deleteMany();
-
-  // Create Users
-  const sellerPassword = await bcrypt.hash('seller1234', 10);
-  const shopperPassword = await bcrypt.hash('shopper1234', 10);
-
-  const seller = await prisma.user.create({
-    data: {
-      name: 'Aura Seller',
-      email: 'seller@aura.com',
-      password: sellerPassword,
-      role: 'SELLER',
-    },
-  });
-
-  const shopper = await prisma.user.create({
-    data: {
-      name: 'Alex Morgan (Shopper)',
-      email: 'shopper@aura.com',
-      password: shopperPassword,
-      role: 'CUSTOMER',
-    },
-  });
-
-  console.log('👤 Created demo accounts: seller@aura.com & shopper@aura.com');
-
-  // Create 6 Categories
+  // Create 6 Categories using Upsert so we don't duplicate or delete
   const categoriesData = [
     { name: 'Electronics', slug: 'electronics', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80' },
     { name: 'Footwear', slug: 'footwear', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80' },
@@ -50,12 +16,15 @@ async function main() {
   ];
 
   for (const cat of categoriesData) {
-    await prisma.category.create({ data: cat });
+    await prisma.category.upsert({
+      where: { slug: cat.slug },
+      update: {},
+      create: cat,
+    });
   }
 
-  console.log('🏷️ Created 6 categories');
-
-  console.log('🎉 Database seeding completed successfully! No default products seeded to support multi-vendor architecture.');
+  console.log('🏷️ Upserted 6 categories');
+  console.log('🎉 Database seeding completed successfully!');
 }
 
 main()
