@@ -43,6 +43,9 @@ export async function POST(req: Request) {
     }
   } catch (error: any) {
     console.error('Groq API Error:', error);
-    return NextResponse.json({ error: 'Failed to process AI request' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to process AI request',
+      details: error.message || String(error)
+    }, { status: 500 });
   }
 }

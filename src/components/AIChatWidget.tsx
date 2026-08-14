@@ -50,9 +50,9 @@ export default function AIChatWidget() {
       
       setMessages((prev) => [
         ...prev,
-        { role: 'ai', text: data.reply || 'Sorry, something went wrong.' },
+        { role: 'ai', text: data.reply || (data.details ? `Error: ${data.details}` : 'Sorry, something went wrong.') },
       ]);
-    } catch (err) {
+    } catch (err: any) {
       setMessages((prev) => [
         ...prev,
         { role: 'ai', text: 'Network error. Please try again later.' },
