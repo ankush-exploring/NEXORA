@@ -1,0 +1,122 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("CUSTOMER") // "CUSTOMER" | "SELLER"
+  balance   Float    @default(0) // Earnings for sellers
+  
+  // Settings & Payments
+  upiId              String?
+  twoFactorEnabled   Boolean  @default(false)
+  lastPasswordChange DateTime @default(now())
+  notifyOrderUpdates Boolean  @default(true)
+  notifyPromotions   Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  products  Product[] // Products created by this seller
+  orders    Order[]
+  reviews   Review[]
+  wishlists Wishlist[]
+}
+
+model Category {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  slug     String    @unique
+  image    String?
+  products Product[]
+}
+
+model Product {
+  id             String      @id @default(uuid())
+  title          String
+  slug           String      @unique
+  description    String
+  price          Float
+  compareAtPrice Float?
+  categoryId     String
+  sellerId       String
+  images         String      // JSON array string of image URLs
+  stock          Int         @default(50)
+  rating         Float       @default(4.8)
+  featured       Boolean     @default(false)
+  tags           String      @default("[]") // JSON string of tag keywords
+  specifications String      @default("[]") // JSON string of key-value pairs or specs
+  sizes          String      @default("[]") // JSON string of available sizes
+  createdAt      DateTime    @default(now())
+
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  seller     User        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  reviews    Review[]
+  orderItems OrderItem[]
+  wishlists  Wishlist[]
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  orderNumber     String      @unique
+  userId          String
+  totalAmount     Float
+  status          String      @default("PROCESSING") // "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED"
+  shippingName    String
+  shippingEmail   String
+  shippingAddress String
+  shippingCity    String
+  shippingZip     String
+  paymentMethod   String      @default("Credit Card (Test)")
+  transactionId   String?     // Paytm Transaction ID
+  createdAt       DateTime    @default(now())
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  title     String
+  price     Float
+  quantity  Int
+  image     String
+  size      String?
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  productId String
+  userId    String
+  userName  String
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
